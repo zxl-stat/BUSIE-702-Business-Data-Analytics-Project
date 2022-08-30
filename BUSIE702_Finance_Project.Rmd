@@ -9,7 +9,7 @@ output: pdf_document
 library(readxl)
 
 # Reading the data
-finance_df <- read_excel("Finance data for practicum.xlsx")
+finance_df <- read.csv("Finance data for practicum.csv")
 finance_df=finance_df[-505,]
 ```
 
