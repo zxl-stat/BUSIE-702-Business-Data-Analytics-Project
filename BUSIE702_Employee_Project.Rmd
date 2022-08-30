@@ -8,7 +8,7 @@ output: pdf_document: default
 # Reading the data
 ```{r}
 library(readxl)
-employee_df <- read_excel("hr employee attrition.xlsx")
+employee_df <- read.csv("hr employee attrition.csv")
 ```
 
 # checking the data
