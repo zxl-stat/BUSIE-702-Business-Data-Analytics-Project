@@ -1,0 +1,526 @@
+---
+title: "BUSIE702_Employee_Project"
+author: "Xiaoliang_Zhang (1300019)"
+date: "July 11st, 2022"
+output: pdf_document: default
+---
+
+# Reading the data
+```{r}
+library(readxl)
+employee_df <- read_excel("hr employee attrition.xlsx")
+```
+
+# checking the data
+```{r}
+str(employee_df)
+
+summary(employee_df)
+
+colSums(is.na(employee_df)) # check missing value 
+```
+
+# Deal Missing value with 'mean' & delete "is_smoker"
+```{r}
+library(dplyr)
+
+# delete "is_smoker"
+employee_df <- employee_df %>% select(-is_smoker)
+
+# Deal Missing value
+var_miss <- c("average_montly_hours", "time_spend_company")
+
+employee_df$average_montly_hours[is.na(employee_df$average_montly_hours)] <- 
+  mean(employee_df$average_montly_hours, na.rm = TRUE)
+
+employee_df$time_spend_company[is.na(employee_df$time_spend_company)] <- 
+  mean(employee_df$time_spend_company, na.rm = TRUE)
+
+colSums(is.na(employee_df))
+```
+#----------------------------
+
+# Change to factor 
+```{r}
+employee_df$left <- as.factor(employee_df$left)  #levels "YES", "NO"
+levels(employee_df$left)[match("no",levels(employee_df$left))] <- "NO"
+levels(employee_df$left)[match("yes",levels(employee_df$left))] <- "YES"
+
+employee_df$department <- as.factor(employee_df$department)
+
+employee_df$salary <- as.factor(employee_df$salary)  # level "low", "medium", "high"
+
+employee_df$work_accident <- as.factor(employee_df$work_accident)  # change level to "YES", "NO"
+levels(employee_df$work_accident)[match("0",levels(employee_df$work_accident))] <- "NO"
+levels(employee_df$work_accident)[match("1",levels(employee_df$work_accident))] <- "YES"
+
+employee_df$promotion_last_5years <- as.factor(employee_df$promotion_last_5years)  # change level to "YES", "NO"
+levels(employee_df$promotion_last_5years)[match("0",levels(employee_df$promotion_last_5years))] <- "NO"
+levels(employee_df$promotion_last_5years)[match("1",levels(employee_df$promotion_last_5years))] <- "YES"
+
+summary(employee_df)
+```
+
+
+## Correlation (left). Change to numeric 
+```{r}
+numeric_df <- employee_df
+
+numeric_df$left <- as.numeric(as.factor(numeric_df$left))
+
+numeric_df$department <- as.numeric(as.factor(numeric_df$department))
+
+numeric_df$work_accident <- as.numeric(as.factor(numeric_df$work_accident))
+
+numeric_df$promotion_last_5years <- as.numeric(as.factor(numeric_df$promotion_last_5years))
+
+numeric_df$salary <- as.numeric(as.factor(numeric_df$salary))
+
+summary(numeric_df)
+```
+# Correlation
+```{r}
+# pcs in R using prcomp()
+library(factoextra)
+library(ggplot2)
+library(corrplot)
+library(GGally)
+
+# Check correlation between variables
+cor(numeric_df)
+
+#corrplot(cor(numeric_df), method = 'color',type = 'lower') # no high correlation
+
+ggcorr(numeric_df, method = c("everything", "pearson")) 
+```
+
+
+
+# Density plot (left, satisfaction_level)
+```{r}
+# Libraries
+library(ggplot2)
+library(hrbrthemes)
+library(dplyr)
+library(tidyr)
+library(viridis)
+
+employee_df %>% ggplot( aes(x=satisfaction_level, group=left, fill=left)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    theme_ipsum()
+#p2
+```
+
+
+# Violin plot (left, salary, satisfaction_level)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+  
+# Grouped
+employee_df %>%
+  mutate(salary = fct_reorder(salary, satisfaction_level)) %>%
+  ggplot(aes(fill=left, y=satisfaction_level, x=salary)) + 
+    geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+    scale_fill_viridis(discrete=T, name="") +
+    theme_ipsum()  +
+    xlab("Salary") +
+    ylab("satisfaction_level")
+```
+
+# Barplot (left, salary)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+employee_df%>% select(left, salary) %>% group_by(left) %>% count(salary) %>%
+ggplot( aes(fill=left, y=n, x=salary)) +
+    geom_bar(position="dodge", stat="identity") +  
+  geom_text(aes(label = n), position = position_dodge(0.9),
+            color="black",vjust = -.5,hjust = 0.5)
+```
+
+
+# Violin plot (left, department, satisfaction_level)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+# Grouped
+employee_df %>% 
+  mutate(department = fct_reorder(department, satisfaction_level)) %>%
+  ggplot(aes(fill=left, y=satisfaction_level, x=department)) + 
+    geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+    scale_fill_viridis(discrete=T, name="") +
+    theme_ipsum()  +
+    xlab("Salary") +
+    ylab("satisfaction_level")
+```
+
+
+# Barplot (left, department)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+employee_df%>% select(left, department) %>% group_by(left) %>% count(department) %>%
+ggplot( aes(fill=left, y=n, x=department)) +
+    geom_bar(position="dodge", stat="identity") +  
+  geom_text(aes(label = n), position = position_dodge(0.9),
+            color="black",vjust = -.5,hjust = 0.5)
+```
+
+
+# Violin plot (left, department, time_spend_company)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+  
+#average_montly_hours
+
+# Grouped
+employee_df %>% 
+  mutate(department = fct_reorder(department, time_spend_company)) %>%
+  ggplot(aes(fill=left, y=time_spend_company, x=department)) + 
+    geom_violin(position="dodge", alpha=0.5, outlier.colour="transparent") +
+    scale_fill_viridis(discrete=T, name="") +
+    theme_ipsum()  +
+    xlab("Salary") +
+    ylab("time_spend_company")
+```
+
+
+
+# Density plot (left, number_project)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+employee_df %>% ggplot( aes(x=number_project, group=left, fill=left)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    theme_ipsum()
+#p2
+```
+
+
+# barplot (left, promotion_last_5years)
+```{r}
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+
+employee_df%>% select(left, promotion_last_5years) %>% group_by(left) %>% count(promotion_last_5years) %>%
+ggplot( aes(fill=left, y=n, x=promotion_last_5years)) +
+    geom_bar(position="dodge", stat="identity") +  
+  geom_text(aes(label = n), position = position_dodge(0.9),
+            color="black",vjust = -.5,hjust = 0.5)
+```
+
+
+---------------------------------------------------
+
+#  Train-test data set split 
+```{r}
+# load libraries
+library(caret)
+library(mlbench)
+
+set.seed(998)
+inTraining <- createDataPartition(employee_df$left, p = .75, list = FALSE)
+
+training <- employee_df[ inTraining,]
+testing  <- employee_df[-inTraining,]
+```
+
+## Random Forest Regression 
+
+```{r}
+# load libraries
+library(caret)
+library(mlbench)
+
+##  cross validation. (5-fold CV, no repeated, because my laptop can't run)
+##  usually using 10-fold CV and repeated 10 times. (old laptop can't run)
+fitControl <- trainControl(method="cv", 
+                           number=5)
+
+set.seed(825)
+rfFit <- train(left~., data=training, 
+              method="rf", 
+              metric="Accuracy", 
+              trControl=fitControl)
+
+# display results
+print(rfFit)
+
+rfFit$finalModel
+
+# predict results
+predict(rfFit, newdata = head(testing), type = "prob")
+
+# Confusion Matrix
+confusion = predict(rfFit, newdata = testing, type = "raw")
+as.data.frame(confusion)
+
+confusion_mtx = table(unlist(testing[, 7]), confusion)
+confusion_mtx
+```
+
+## Random Forest tree plot
+```{r}
+library(dplyr)
+library(ggraph)
+library(igraph)
+tree_func <- function(final_model, 
+                      tree_num) {
+  
+  # get tree by index
+  tree <- randomForest::getTree(final_model, 
+                                k = tree_num, 
+                                labelVar = TRUE) %>%
+    tibble::rownames_to_column() %>%
+    # make leaf split points to NA, so the 0s won't get plotted
+    mutate(`split point` = ifelse(is.na(prediction), `split point`, NA))
+  
+  # prepare data frame for graph
+  graph_frame <- data.frame(from = rep(tree$rowname, 2),
+                            to = c(tree$`left daughter`, tree$`right daughter`))
+  
+  # convert to graph and delete the last node that we don't want to plot
+  graph <- graph_from_data_frame(graph_frame) %>%
+    delete_vertices("0")
+  
+  # set node labels
+  V(graph)$node_label <- gsub("_", " ", as.character(tree$`split var`))
+  V(graph)$leaf_label <- as.character(tree$prediction)
+  V(graph)$split <- as.character(round(tree$`split point`, digits = 2))
+  
+  # plot
+  plot <- ggraph(graph, 'dendrogram') + 
+    theme_bw() +
+    geom_edge_link() +
+    geom_node_point() +
+    geom_node_text(aes(label = node_label), na.rm = TRUE, repel = TRUE) +
+    geom_node_label(aes(label = split), vjust = 2.5, na.rm = TRUE, fill = "white") +
+    geom_node_label(aes(label = leaf_label, fill = leaf_label), na.rm = TRUE, 
+                    repel = TRUE, colour = "black", fontface = "bold", show.legend = FALSE) +
+    theme(panel.grid.minor = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.background = element_blank(),
+          plot.background = element_rect(fill = "white"),
+          panel.border = element_blank(),
+          axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          plot.title = element_text(size = 18))
+  
+  print(plot)
+}
+
+# min or max
+tree_num <- which(rfFit$finalModel$forest$ndbigtree == max(rfFit$finalModel$forest$ndbigtree))
+tree_func(final_model = rfFit$finalModel, tree_num)
+
+# save the plot as bigger size 
+ggsave(tree_func(rfFit$finalModel,1),file="tree_plot.png",width=49,height=40)
+```
+
+
+```{r}
+# install.packages("randomForest")  # For implementing random forest algorithm
+library(randomForest)
+
+# Fitting Random Forest to the train dataset
+set.seed(120)  # Setting seed
+classifier_RF = randomForest(x = training[-7],
+                             y = training$left,
+                             mtry = 10)
+  
+classifier_RF
+
+# Confusion Matrix in training data
+classifier_RF$confusion
+
+# Predicting the Test set results
+y_pred = predict(classifier_RF, newdata = testing[-7])
+  
+# Confusion Matrix
+confusion_mtx = table(unlist(testing[, 7]), y_pred)
+confusion_mtx
+
+# Accurary
+library(Metrics)
+accuracy(unlist(testing[, 7]), y_pred)
+
+# Plotting model
+plot(classifier_RF)
+  
+# Importance plot
+importance(classifier_RF)
+  
+# Variable importance plot
+varImpPlot(classifier_RF)
+```
+
+
+##  KNN modelling
+
+```{r}
+# load libraries
+library(caret)
+library(mlbench)
+
+##  cross validation. ( 5-fold CV, repeated 5 times)
+fitControl <- trainControl(method="repeatedcv", 
+                        number = 5, 
+                        repeats = 5)
+
+set.seed(825)
+knnfit <- train(left~., data=training, 
+                method="knn",  
+                trControl=fitControl,
+                metric="Accuracy")
+
+# display results
+print(knnfit)
+
+# plot(knnfit)
+# densityplot(knnfit)
+
+# predict results
+predict(knnfit, newdata = head(testing), type = "prob")
+
+# Confusion Matrix
+confusion = predict(knnfit, newdata = testing, type = "raw")
+as.data.frame(confusion)
+
+confusion_mtx = table(unlist(testing[, 7]), confusion)
+confusion_mtx
+```
+
+
+
+##  Stochastic Gradient Boosting (GBM)
+
+```{r}
+##  cross validation. ( 5-fold CV, repeated 5 times)
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5)
+
+set.seed(825)
+gbmFit <- train(left ~ ., data = training, 
+                method = "gbm", 
+                trControl = fitControl,
+                metric="Accuracy",
+                verbose = FALSE)
+
+# display results
+gbmFit
+
+# ggplot(gbmFit)
+# densityplot(gbmFit, pch = "|")
+
+# predict results
+predict(gbmFit, newdata = head(testing), type = "prob")
+
+# Confusion Matrix
+confusion = predict(gbmFit, newdata = testing, type = "raw")
+as.data.frame(confusion)
+
+confusion_mtx = table(unlist(testing[, 7]), confusion)
+confusion_mtx
+```
+
+
+
+---------------------------------------------------
+
+## Train-test data set split 
+```{r}
+# set.seed(123)
+# dat.d <- sample(1:nrow(employee_df),size=nrow(employee_df)*0.7,replace = FALSE) #random selection of 70% data.
+# 
+# train_data<- employee_df[dat.d,] # 70% training data
+# test_data <- employee_df[-dat.d,] # remaining 30% test data
+```
+
+## Logistic Regression
+```{r}
+# # Installing the package
+# # install.packages("caTools")    # For Logistic regression
+# # install.packages("ROCR")       # For ROC curve to evaluate model
+# 
+# logi = glm(left ~ ., family = "binomial", data = train_data)
+# # plot(logi)
+# summary(logi)
+# 
+# pred_logi = predict(logi, test_data,type = 'response')
+# summary(pred_logi)
+# 
+# # Changing probabilities
+# pred_logi <- ifelse(pred_logi >0.5, 1, 0)
+# 
+# # calculate the mean square error
+# # as.numeric(pred_logi)
+# # mse.logi = mean((pred_logi-test_data$left)^2)
+# # mse.logi 
+# 
+# # Evaluating model accuracy
+# # using confusion matrix
+# table(test_data$left, pred_logi)
+#    
+# missing_classerr <- mean(pred_logi != test_data$left)
+# print(paste('Accuracy =', 1 - missing_classerr)) # 0.788
+#    
+# # ROC-AUC Curve
+# # Loading package
+# library(caTools)
+# library(ROCR)
+# 
+# ROCPred <- prediction(pred_logi, test_data$left) 
+# ROCPer <- performance(ROCPred, measure = "tpr", 
+#                              x.measure = "fpr")
+#    
+# auc <- performance(ROCPred, measure = "auc")
+# auc <- auc@y.values[[1]]
+# auc
+#    
+# # Plotting curve
+# plot(ROCPer)
+# plot(ROCPer, colorize = TRUE, 
+#      print.cutoffs.at = seq(0.1, by = 0.1), 
+#      main = "ROC CURVE")
+# abline(a = 0, b = 1)
+#    
+# auc <- round(auc, 4)
+# legend(.6, .4, auc, title = "AUC", cex = 1)
+```
+
+
+
+
+

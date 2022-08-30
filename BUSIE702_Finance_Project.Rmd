@@ -1,0 +1,583 @@
+---
+title: "BUSIE702_Finance_Project"
+author: "Xiaoliang Zhang (1300019)"
+date: 'July 11st, 2022'
+output: pdf_document
+---
+
+```{r}
+library(readxl)
+
+# Reading the data
+finance_df <- read_excel("Finance data for practicum.xlsx")
+finance_df=finance_df[-505,]
+```
+
+# checking data status
+```{r}
+#glimpse(finance_df)
+
+str(finance_df)
+
+summary(finance_df)
+```
+
+
+## Change coloum name 
+```{r}
+names(finance_df)
+colnames(finance_df) <- c("Equity", "Current.Market.Cap","Last.Price","Alpha","Beta",
+                          "Revenue.Growth.Year.over.Year","ROA","ROE","Profit.Margin",
+                          "Asset.Turnover","Financial.Leverage","EBIT.Interest","Price.Earnings.Ratio",
+                          "Price.to.Sales.Ratio","Short.and.Long.Term.Debt","Total.Equity",
+                          "Operating.Return.on.Total.Invested.Capital","Weighted.Average.Cost.of.Cap",
+                          "Free.Cash.Flow","Price.to.Book.Ratio","Industry.Group","WACC.Economic.Value.Added",
+                          "Total.Compensation.Paid.to.Executives")
+
+# colnames(finance_df)[which(names(finance_df) == "...1")] <- "Equity"
+
+```
+
+## Change to numeric/factor 
+```{r}
+## change to numeric 
+finance_df$Alpha <- as.numeric(finance_df$Alpha)
+
+finance_df$Beta <- as.numeric(finance_df$Beta)
+
+finance_df$ROA <- as.numeric(finance_df$ROA)
+
+finance_df$ROE <- as.numeric(finance_df$ROE)
+
+finance_df$Asset.Turnover<- as.numeric(finance_df$Asset.Turnover)
+
+finance_df$Financial.Leverage<- as.numeric(finance_df$Financial.Leverage)
+
+finance_df$EBIT.Interest<- as.numeric(finance_df$EBIT.Interest)
+
+finance_df$Price.Earnings.Ratio<- as.numeric(finance_df$Price.Earnings.Ratio)
+
+finance_df$Price.to.Sales.Ratio<- as.numeric(finance_df$Price.to.Sales.Ratio)
+
+finance_df$Operating.Return.on.Total.Invested.Capital<- as.numeric(finance_df$Operating.Return.on.Total.Invested.Capital)
+
+finance_df$Price.to.Book.Ratio<- as.numeric(finance_df$Price.to.Book.Ratio)
+
+finance_df$WACC.Economic.Value.Added<- as.numeric(finance_df$WACC.Economic.Value.Added)
+
+finance_df$Total.Compensation.Paid.to.Executives<- as.numeric(finance_df$Total.Compensation.Paid.to.Executives)
+
+## change to factr 
+finance_df$Equity <- as.factor(finance_df$Equity)
+
+finance_df$Industry.Group <- as.factor(finance_df$Industry.Group)
+
+
+summary(finance_df)
+```
+
+# checking missing data
+```{r}
+colSums(is.na(finance_df)) # check missing value 
+
+barplot(colSums(is.na(finance_df))) # check missing value (#N/A N/A)
+```
+
+
+# Deal Missing data with 'mean'
+```{r}
+finance_df$Alpha[is.na(finance_df$Alpha)] <- 
+  mean(finance_df$Alpha, na.rm = TRUE)
+
+finance_df$ROA[is.na(finance_df$ROA)] <- 
+  mean(finance_df$ROA, na.rm = TRUE)
+
+finance_df$Asset.Turnover[is.na(finance_df$Asset.Turnover)] <- 
+  mean(finance_df$Asset.Turnover, na.rm = TRUE)
+
+finance_df$Price.Earnings.Ratio[is.na(finance_df$Price.Earnings.Ratio)] <- 
+  mean(finance_df$Price.Earnings.Ratio, na.rm = TRUE)
+
+finance_df$Beta[is.na(finance_df$Beta)] <- 
+  mean(finance_df$Beta, na.rm = TRUE)
+
+finance_df$ROE[is.na(finance_df$ROE)] <- 
+  mean(finance_df$ROE, na.rm = TRUE)
+
+finance_df$Financial.Leverage[is.na(finance_df$Financial.Leverage)] <- 
+  mean(finance_df$Financial.Leverage, na.rm = TRUE)
+
+finance_df$Price.to.Sales.Ratio[is.na(finance_df$Price.to.Sales.Ratio)] <- 
+  mean(finance_df$Price.to.Sales.Ratio, na.rm = TRUE)
+
+finance_df$Operating.Return.on.Total.Invested.Capital[is.na(finance_df$Operating.Return.on.Total.Invested.Capital)] <- 
+  mean(finance_df$Operating.Return.on.Total.Invested.Capital, na.rm = TRUE)
+
+finance_df$ Price.to.Book.Ratio[is.na(finance_df$ Price.to.Book.Ratio)] <- 
+  mean(finance_df$ Price.to.Book.Ratio, na.rm = TRUE)
+
+finance_df$Total.Compensation.Paid.to.Executives[is.na(finance_df$Total.Compensation.Paid.to.Executives)] <- 
+  mean(finance_df$Total.Compensation.Paid.to.Executives, na.rm = TRUE)
+
+finance_df$ EBIT.Interest[is.na(finance_df$ EBIT.Interest)] <- 
+  mean(finance_df$ EBIT.Interest, na.rm = TRUE)
+
+colSums(is.na(finance_df))
+```
+
+```{r}
+library(dplyr)
+library(car)
+
+plot(finance_df$Current.Market.Cap)
+hist(finance_df$Current.Market.Cap)
+
+boxplot(finance_df$Current.Market.Cap)
+
+boxplot.stats(finance_df$Current.Market.Cap)$out
+
+#summary(finance_df$Current.Market.Cap)
+```
+
+
+
+# correlation (left)
+```{r}
+# pcs in R using prcomp()
+library(factoextra)
+library(ggplot2)
+library(corrplot)
+library(GGally)
+
+numeric_df = finance_df
+numeric_df$Equity <- as.numeric(as.factor(numeric_df$Equity))
+numeric_df$Industry.Group <- as.numeric(as.factor(numeric_df$Industry.Group))
+
+cor(numeric_df)
+
+#corrplot(cor(numeric_df), method = 'color',type = 'lower') # no high correlation
+ggcorr(numeric_df, method = c("everything", "pearson")) 
+```
+
+## group by 'Industry.Group'
+
+```{r}
+library(dplyr)
+library(tidyverse)
+
+# finance_df$Industry.Group = as.character(finance_df$Industry.Group)
+
+## group by 'Industry.Group' keep mean 'Current.Market.Cap' & 'Free.Cash.Flow'
+finance_gb <- finance_df %>% group_by(Industry.Group)
+finance_gb <- finance_gb %>% group_by(Industry.Group) %>% 
+  summarise (
+Current.Market.Cap = mean(Current.Market.Cap),
+  Free.Cash.Flow = mean(Free.Cash.Flow),
+  Total.Equity = mean(Total.Equity),
+  Last.Price = mean(Last.Price),
+  WACC.Economic.Value.Added = mean(WACC.Economic.Value.Added),
+  Total.Compensation.Paid.to.Executives = mean(Total.Compensation.Paid.to.Executives),
+  ROA = mean(ROA),
+  Short.and.Long.Term.Debt = mean(Short.and.Long.Term.Debt),
+  Operating.Return.on.Total.Invested.Capital = mean(Operating.Return.on.Total.Invested.Capital),
+  Short.and.Long.Term.Debt = mean(Short.and.Long.Term.Debt),
+  Asset.Turnover = mean(Asset.Turnover),
+  Price.to.Sales.Ratio = mean(Price.to.Sales.Ratio)
+  )
+
+#finance_gb %>% filter(Current.Market.Cap == max(Current.Market.Cap))
+#plot(finance_gb)
+ 
+```
+
+## barplot (Current.Market.Cap)
+```{r}
+# load the library
+library(forcats)
+
+# Reorder following the value of another column:
+finance_gb %>%
+  mutate(Industry.Group = fct_reorder(Industry.Group, desc(Current.Market.Cap))) %>%
+  ggplot( aes(x=Industry.Group, y=Current.Market.Cap)) +
+    geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+    coord_flip() +
+    xlab("") 
+```
+
+## Linear Scatter plot (Current.Market.Cap & Free.Cash.Flow) 
+```{r}
+# Library
+library(ggplot2)
+library(hrbrthemes)
+
+p <- ggplot(finance_gb, aes(x=Free.Cash.Flow, y=Current.Market.Cap)) +
+  geom_point(color=as.numeric(finance_gb$Industry.Group)) +
+  geom_smooth(method=lm , color="red", fill="#69b3a2", se=TRUE) +
+  theme_ipsum()
+p
+```
+
+
+## Circular barplot (Current.Market.Cap & Free.Cash.Flow)
+```{r}
+library(dplyr)
+library(ggplot2)
+library(stringr)
+
+plt <- ggplot(finance_gb) +
+  # Make custom panel grid
+  geom_hline(
+    aes(yintercept = y), 
+    data.frame(y = c(0:3) * 1000),
+    color = "lightgrey"
+  ) + 
+  # Add bars to represent the cumulative track lengths
+  # str_wrap(Industry.Group, 5) wraps the text so each line has at most 5 characters
+  # (but it doesn't break long words!)
+  geom_col(
+    aes(
+      x = reorder(str_wrap(Industry.Group, 5), Free.Cash.Flow),
+      y = Free.Cash.Flow,
+      fill = Free.Cash.Flow
+    ),
+    position = "dodge2",
+    show.legend = TRUE,
+    alpha = .9
+  ) +
+  
+  # Add dots to represent the mean gain
+  geom_point(
+    aes(
+      x = reorder(str_wrap(Industry.Group, 5), Free.Cash.Flow),
+      y = Free.Cash.Flow
+    ),
+    size = 0.5,
+    color = "gray12"
+  ) +
+   
+  # Lollipop shaft for mean gain per region
+  geom_segment(
+    aes(
+      x = reorder(str_wrap(Industry.Group, 5), Free.Cash.Flow),
+      y = 0,
+      xend = reorder(str_wrap(Industry.Group, 5), Free.Cash.Flow),
+      yend = 3000
+    ),
+    linetype = "dashed",
+    color = "gray12"
+  ) + 
+  
+  # Make it circular!
+  coord_polar()
+
+plt
+```
+
+
+## Bubble chart (Current.Market.Cap & Free.Cash.Flow & Total.Equity) 
+```{r}
+# Libraries
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+library(viridis)
+
+# Most basic bubble plot
+finance_gb %>%
+  arrange(desc(Current.Market.Cap)) %>%
+  mutate(Industry.Group = factor(Industry.Group, Industry.Group)) %>%
+  ggplot(aes(x=Total.Equity, y=Free.Cash.Flow, size=Current.Market.Cap, fill=Industry.Group)) +
+    geom_point(alpha=0.5, shape=21, color="black") +
+    scale_size(range = c(.1, 24), name="Population (M)") +
+    scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+    theme_ipsum() +
+    theme(legend.position="bottom") +
+    ylab("Free.Cash.Flow") +
+    xlab("Total.Equity") +
+    theme(legend.position = "none")
+```
+
+## Bubble chart (Short.and.Long.Term.Debt & Free.Cash.Flow & Total.Equity) 
+```{r}
+# Libraries
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+library(viridis)
+
+# Most basic bubble plot
+finance_gb %>%
+  arrange(desc(Short.and.Long.Term.Debt)) %>%
+  mutate(Industry.Group = factor(Industry.Group, Industry.Group)) %>%
+  ggplot(aes(x=Free.Cash.Flow, y=Total.Equity, size=Short.and.Long.Term.Debt, fill=Industry.Group)) +
+    geom_point(alpha=0.5, shape=21, color="black") +
+    scale_size(range = c(.1, 24), name="Population (M)") +
+    scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+    theme_ipsum() +
+    theme(legend.position="bottom") +
+    ylab("Total.Equity") +
+    xlab("Free.Cash.Flow") +
+    theme(legend.position = "none")
+```
+
+
+
+## Bubble chart (Current.Market.Cap & ROA & Operating.Return.on.Total.Invested.Capital) 
+```{r}
+# Libraries
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+library(viridis)
+
+# Most basic bubble plot
+finance_gb %>%
+  arrange(desc(Operating.Return.on.Total.Invested.Capital)) %>%
+  mutate(Industry.Group = factor(Industry.Group, Industry.Group)) %>%
+  ggplot(aes(y=ROA, x=Current.Market.Cap , size=Operating.Return.on.Total.Invested.Capital, fill=Industry.Group)) +
+    geom_point(alpha=0.5, shape=21, color="black") +
+    scale_size(range = c(.1, 24), name="Population (M)") +
+    scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+    theme_ipsum() +
+    theme(legend.position="bottom") +
+    ylab("ROA") +
+    xlab("Current.Market.Cap") +
+    theme(legend.position = "none")
+```
+
+## Bubble chart (Asset.Turnover & Price.to.Sales.Ratio & ROA) 
+
+```{r}
+# # Libraries
+# library(ggplot2)
+# library(dplyr)
+# library(hrbrthemes)
+# library(viridis)
+# 
+# # Most basic bubble plot
+# finance_gb %>%
+#   arrange(desc(ROA)) %>%
+#   mutate(Industry.Group = factor(Industry.Group, Industry.Group)) %>%
+#   ggplot(aes(x=Price.to.Sales.Ratio, y=Asset.Turnover , size=ROA, fill=Industry.Group)) +
+#     geom_point(alpha=0.5, shape=21, color="black") +
+#     scale_size(range = c(.1, 24), name="Population (M)") +
+#     scale_fill_viridis(discrete=TRUE, guide=FALSE, option="A") +
+#     theme_ipsum() +
+#     theme(legend.position="bottom") +
+#     ylab("Free.Cash.Flow") +
+#     xlab("Total.Equity") +
+#     theme(legend.position = "none")
+
+```
+
+
+
+
+-----------------------------------
+
+#  Train-test data set split 
+```{r}
+finance_df_ml = finance_df[,-1]  # Delete Unix code colounm 'Equity'
+finance_df_ml$Industry.Group = as.numeric(finance_df_ml$Industry.Group) 
+
+set.seed(520)
+dat.d <- sample(1:nrow(finance_df_ml),size=nrow(finance_df_ml)*0.75,replace = FALSE) #random selection of 75% data.
+
+train <- finance_df_ml[dat.d,] # 75% training data
+test <- finance_df_ml[-dat.d,] # remaining 25% test data
+```
+
+
+
+## Linear Regression 
+
+```{r}
+lmFit <- lm(Current.Market.Cap ~., train)
+
+summary(lmFit) # R-square 0.8323
+anova(lmFit)
+plot(lmFit)
+
+
+
+# create the evaluation metrics function
+
+eval_metrics = function(model, df, predictions, target){
+    resids = df[,target] - predictions
+    resids2 = resids**2
+    N = length(predictions)
+    r2 = as.character(round(summary(model)$r.squared, 2))
+    adj_r2 = as.character(round(summary(model)$adj.r.squared, 2))
+    print(adj_r2) #Adjusted R-squared
+    print(as.character(round(sqrt(sum(resids2)/N), 2))) #RMSE
+}
+
+# # predicting and evaluating the model on train data
+# predictions = predict(lmFit, newdata = train)
+# eval_metrics(lmFit, train, predictions, target = 'Current.Market.Cap')
+
+# predicting and evaluating the model on test data
+predictions = predict(lmFit, newdata = test)
+eval_metrics(lmFit, test, predictions, target = 'Current.Market.Cap')
+
+#extractAIC(lmFit2)
+
+
+library(caret)
+data_ctrl <- trainControl(method = "cv", number = 5)
+model_caret <- train(Current.Market.Cap ~.,   # model to fit
+                     data = train,                        
+                     trControl = data_ctrl,              # folds
+                     method = "lmStepAIC",                      # specifying regression model
+                     na.action = na.pass)
+
+model_caret
+summary(model_caret$finalModel)
+
+lmFit2 = lm(Current.Market.Cap ~ Last.Price + Beta + Revenue.Growth.Year.over.Year + 
+    ROA + Asset.Turnover + Price.to.Sales.Ratio + Total.Equity + 
+    Weighted.Average.Cost.of.Cap + Free.Cash.Flow + Industry.Group + 
+    WACC.Economic.Value.Added + Total.Compensation.Paid.to.Executives, data = train)
+summary(lmFit2)
+
+# # predicting and evaluating the model on train data
+# predictions = predict(lmFit2, newdata = train)
+# eval_metrics(lmFit2, train, predictions, target = 'Current.Market.Cap')
+
+# predicting and evaluating the model on test data
+predictions = predict(lmFit2, newdata = test)
+eval_metrics(lmFit2, test, predictions, target = 'Current.Market.Cap')
+
+```
+
+## LASSO Regression
+
+```{r}
+# load packages
+library(glmnet)
+library(plyr)
+library(readr)
+library(dplyr)
+library(caret)
+library(ggplot2)
+library(repr)
+
+#define response variable
+y_train <- train$Current.Market.Cap
+y_test <- test$Current.Market.Cap
+
+#define matrix of predictor variables
+x_train <- data.matrix(train[, c("Last.Price","Alpha","Beta",
+         "Revenue.Growth.Year.over.Year","ROA","ROE","Profit.Margin",
+         "Asset.Turnover","Financial.Leverage","EBIT.Interest","Price.Earnings.Ratio",
+         "Price.to.Sales.Ratio","Short.and.Long.Term.Debt","Total.Equity",
+         "Operating.Return.on.Total.Invested.Capital","Weighted.Average.Cost.of.Cap",
+         "Free.Cash.Flow","Price.to.Book.Ratio","Industry.Group","WACC.Economic.Value.Added",
+         "Total.Compensation.Paid.to.Executives")])
+x_test <- data.matrix(test[, c("Last.Price","Alpha","Beta",
+         "Revenue.Growth.Year.over.Year","ROA","ROE","Profit.Margin",
+         "Asset.Turnover","Financial.Leverage","EBIT.Interest","Price.Earnings.Ratio",
+         "Price.to.Sales.Ratio","Short.and.Long.Term.Debt","Total.Equity",
+         "Operating.Return.on.Total.Invested.Capital","Weighted.Average.Cost.of.Cap",
+         "Free.Cash.Flow","Price.to.Book.Ratio","Industry.Group","WACC.Economic.Value.Added",
+         "Total.Compensation.Paid.to.Executives")])
+
+#perform k-fold cross-validation to find optimal lambda value
+cv_model <- cv.glmnet(x_train, y_train, alpha = 1)
+
+#find optimal lambda value that minimizes test MSE
+best_lambda <- cv_model$lambda.min
+best_lambda   # 1226487108
+
+#produce plot of test MSE by lambda value
+plot(cv_model) 
+
+#find coefficients of best model
+grid = 10^seq(10,-2,length=100)
+plot_model <- glmnet(x_train, y_train, alpha = 1, lambda = grid)
+plot(plot_model,"lambda", label=FALSE)
+
+best_model <- glmnet(x_train, y_train, alpha = 1, lambda = best_lambda)
+coef(best_model)
+
+#use fitted best model to make predictions
+y_predicted <- predict(best_model, s = best_lambda, newx = x_train)
+
+#find SST and SSE
+sst <- sum((y_train - mean(y_train))^2)
+sse <- sum((y_predicted - y_train)^2)
+
+#find R-Squared
+rsq <- 1 - sse/sst
+rsq  # 0.8240855
+
+
+# Compute R^2 from true and predicted values
+
+# Prediction and evaluation on test data
+predictions_test <- predict(best_model, s = best_lambda, newx = x_test)
+
+#find SST and SSE
+sst <- sum((y_test - mean(y_test))^2)
+sse <- sum((predictions_test - y_test)^2)
+
+#find R-Squared
+rsq <- 1 - sse/sst
+rsq # -1.551173
+```
+
+
+## Ridge Regression
+
+```{r}
+#fit ridge regression model
+model <- glmnet(x_train, y_train, alpha = 0)
+
+#view summary of model
+summary(model)
+
+#perform k-fold cross-validation to find optimal lambda value
+cv_model <- cv.glmnet(x_train, y_train, alpha = 0)
+
+#find optimal lambda value that minimizes test MSE
+best_lambda <- cv_model$lambda.min
+best_lambda    ## 32576574245
+
+#produce plot of test MSE by lambda value
+plot(cv_model) 
+
+#find coefficients of best model
+best_model <- glmnet(x_train, y_train, alpha = 0, lambda = best_lambda)
+coef(best_model)
+
+#produce Ridge trace plot
+plot(model, xvar = "lambda")
+
+#use fitted best model to make predictions
+y_predicted <- predict(model, s = best_lambda, newx = x_train)
+
+#find SST and SSE
+sst <- sum((y_train - mean(y_train))^2)
+sse <- sum((y_predicted - y_train)^2)
+
+#find R-Squared
+rsq <- 1 - sse/sst
+rsq   ## 0.8215536
+
+
+# Compute R^2 from true and predicted values
+
+# Prediction and evaluation on test data
+predictions_test <- predict(best_model, s = best_lambda, newx = x_test)
+
+#find SST and SSE
+sst <- sum((y_test - mean(y_test))^2)
+sse <- sum((predictions_test - y_test)^2)
+
+#find R-Squared
+rsq <- 1 - sse/sst
+rsq  ## -0.6007401
+```
+
+
+
